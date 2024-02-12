@@ -1,126 +1,122 @@
 %% Direct Kinematics
+clear all
+
 %% Parameter Initialization
-% Init the SCARA manipulator parameters
-d0 = 1; a1 = .5; a2 = .5; l1 = .25; l2 = .25; 
-ml1 = 20; ml2 = 20; ml3 = 10;
-Il1 = 4; Il2 = 4; Il4 = 1;
-kr1 = 1; kr2 = 1; kr3 = 50; kr4 = 20;
-Im1 = .01; Im2 = .01; Im3 = .005; Im4 = .001;
-Fm1 = .00005; Fm2 = .00005; Fm3 = .01; Fm4 = .005;
+% Init the SCARA manipulator kiinimetic parameters
+d0 = 1; a1 = .5; a2 = .5;
 % numLinks
 numLinks = 5;
 
 % Init joint variables
-theta1 = pi/6;
-theta2 = pi/4;
-d3 = .25;
-theta4 = pi/3; 
-
-% Init DH matrix
-%       | a alpha d theta | length twist offset angle
-% link i|                 |
-DH = [0, 0, d0, 0;
-    a1, 0, 0, theta1;
-    a2, pi, 0, theta2;
-    0, 0, d3, 0;
-    0, 0, 0, theta4;];
-
-% Init T matrix
-T = eye(4);
-% Init Position vector
-p = zeros(3,numLinks);
+theta1 = pi/2; theta2 = -pi/4; d3 = .25; theta4 = pi/3; 
 
 %% Homogeneus Transformation matrix
-figure;
-for i = 1:numLinks
-    
-    % Link Position
-    p(:,i) = T(1:3,4);
-    
-    % Computing the i-th homogeneus matrix
-    A = [cos(DH(i,4)), -sin(DH(i,4))*cos(DH(i,2)), ... 
-        sin(DH(i,4))*sin(DH(i,2)), DH(i,1)*cos(DH(i,4));
-        sin(DH(i,4)), cos(DH(i,4))*cos(DH(i,2)), ...
-        -cos(DH(i,4))*sin(DH(i,2)), DH(i,1)*sin(DH(i,4));
-        0, sin(DH(i,2)), cos(DH(i,2)), DH(i,3);
-        0, 0, 0, 1;];
+p = scaraHomogeneusTransf(a1,a2,d0,numLinks,theta1,theta2,d3,theta4);
 
-    % Computing Tb_n
-    T = T * A;
-    
-end
+%% Direct kinematics 
+[xe, ye, ze, phi] = scaraDirectKinematic(a1,a2,d0,theta1,theta2,d3,theta4);
 
-% End effector Position and Orientation
-Pe = T(1:3,4);
-Re = T(1:3,1:3);
-
-yaw = atan2(Re(2,1),Re(1,1));
-pitch = atan2(-Re(3,1),sqrt(Re(3,2)^2 + Re(3,3)^2));
-roll = atan2(Re(3,2),Re(3,3)); 
-
-fprintf('\nTransformation matrix from base to end effector\n');
-disp(T);
-
-% Direct kinematics function
-xe = a1*cos(theta1) + a2*cos(theta1 + theta2);
-ye = a1*sin(theta1) + a2*sin(theta1 + theta2);
-ze = d0 - d3;
-phi = theta1 + theta2 - theta4;
-
-% Plot SCARA manipulator
+figure
+%% Plot SCARA manipulator
+subplot(2,1,1);
 plotScara(p,xe,ye,ze,phi);
+axis equal; %responsive
+
+%% Geometrical Jacobian
+J = scaraJacobian(a1,a2,theta1,theta2);
+
+fprintf('\nJacobian matrix\n');
+disp(J);
+disp(det(J));
+
+%% Velocity and Force Ellipsoid
+[velEllips, forceEllips] = scaraEllipsoid(J);
+
+subplot(2,1,2);
+plotScaraEllipsoids(velEllips, forceEllips, xe, ye, a1, theta1)
+axis equal; %responsive
+
+%% Moving SCARA for some joint values in a straigth line
+
+% joint variables of interest
+theta1 = pi/2; theta2 = -pi;
+
+figure
+while theta1 >= pi/16
+    
+    % computing DK Jacobian and ellipsoid
+    p = scaraHomogeneusTransf(a1,a2,d0,numLinks,theta1,theta2,d3,theta4);
+    [xe, ye, ze, phi] = scaraDirectKinematic(a1,a2,d0,theta1,theta2,d3,theta4);
+    J = scaraJacobian(a1,a2,theta1,theta2);
+    [velEllips1, forceEllips1, manipulability] = scaraEllipsoid(J);
+    disp('manipulability')
+    disp(manipulability)
+
+    % Plot
+    subplot(4,1,1);
+    plotScara(p, xe, ye, ze, phi);
+    axis equal;
+    title('Robot Manipulator Pose');
+    hold on
+    
+    subplot(4,1,2);
+    plotScaraEllipsoids(velEllips1, forceEllips1, xe, ye, a1, theta1);
+    axis equal;
+    title('Manipulability Ellipsoids');
+    hold on
+    subplot(4,1,3);
+    plotScaraEllipsoid(velEllips1, xe, ye, a1, theta1);
+    axis equal;
+    title('Manipulability Ellipsoids');
+    hold on
+    subplot(4,1,4);
+    plotScaraEllipsoid(forceEllips1, xe, ye, a1, theta1);
+    axis equal;
+    title('Manipulability Ellipsoids');
+    hold on
+    
+    % Update joint variables
+    theta1 = theta1/2;
+    theta2 = theta2/2;
+    
+    % Pause to visualize each step
+    pause(0.1);
+
+end
+hold off
 
 %% Ellipsoid Calculation for different joint variables value
 
 precision = 0.1; % precision of animation 
 
-figure(2)
+figure
 for i = theta1:precision:theta1 + 2*pi
+    
+    % Homogeneus Transformation matrix
+    p = scaraHomogeneusTransf(a1,a2,d0,numLinks,theta1,theta2,d3,theta4);
+    
+    % Direct kinematics 
+    [xe, ye, ze, phi] = scaraDirectKinematic(a1,a2,d0,theta1,theta2,d3,theta4);
+    
+    % Plot SCARA manipulator
+    subplot(2,1,1);
+    plotScara(p,xe,ye,ze,phi);
+    axis equal; %responsive
+    
+    % Geometrical Jacobian
+    J = scaraJacobian(a1,a2,theta1,theta2);
+    
+    fprintf('\nJacobian matrix\n');
+    disp(J);
+    
+    % Velocity and Force Ellipsoid
+    [velEllips, forceEllips] = scaraEllipsoid(J);
+    
+    subplot(2,1,2);
+    plotScaraEllipsoids(velEllips, forceEllips, xe, ye, a1, theta1)
+    axis equal; %responsive
 
-    %% Geometric Jacobian Matrix
-    J = [-a1*sin(theta1) - a2*sin(theta1 + theta2), - a2*sin(theta1 + theta2), 0, 0;
-        a1*cos(theta1) + a2*cos(theta1 + theta2), a2*cos(theta1 + theta2), 0, 0;
-        0, 0, -1, 0;
-        1, 1, 0, -1;];
-
-    J = J(1:2,1:2);
-
-    %% Eigenvalues and Eigenvectors
-    [V, D] = eig(J*J');
-    ev = diag(D);
-    % t1 = atan2(V(2,1), V(1,1));
-    xe = sqrt((abs(ev(1))));
-    ye = sqrt((abs(ev(2))));
-    
-    %% Forward Kinematics of 2 link approximation for the SCARA
-    x = a1 * cos(theta1) + a2 * cos(theta1 + theta2);
-    y = a1 * sin(theta1) + a2 * cos(theta1 + theta2);
-    
-    plot(0,0,'ko','MarkerFaceColor','k','MarkerSize',8);
-    hold on
-    plot([0, a1*cos(theta1), x],[0, a1*sin(theta2), y],'r-o',...
-        'LineWidth',1.5,'MarkerFaceColor','r','MarkerSize',5);
-    
-    %% Velocity or Manipulability ellipsoid
-    % aa = [cos(t1), -sin(t1); sin(t1), cos(t1)]...
-    %    * [xe * cosd(0:360); ye * sind(0:360)];
-    aa = V * [xe * cosd(0:360); ye * sind(0:360)]; 
-    plot(x + aa(1,:), y + aa(2,:), 'b-');
-    hold on
-    % plot(x + aa2(1,:), y + aa2(2,:), 'g-');
-    % hold on
-    
-    %% Force ellipsoid
-    % Axis are rotated by 90° it's eq to compute (J*J')^-1
-    bb = V * [ye * sind(0:360); xe*cosd(0:360)];
-    plot(x + bb(1,:), y + bb(2,:), 'm-');
-    title('Velocity and Force Ellipsoid');
-    ax = gca;
-    ax.XAxisLocation = 'origin';
-    ax.YAxisLocation = 'origin';
-    axis([-2 2 -2 2])
-    grid on
-    hold off
+    % Iteration
     pause(0.1);
 
     theta1 = theta1 + precision;
@@ -129,19 +125,104 @@ for i = theta1:precision:theta1 + 2*pi
 
 end
 
+clear i precision;
+
+%% Homogeneus Transformation function
+function [p, T, Pe, yaw, pitch, roll] = scaraHomogeneusTransf(a1,a2,d0,...
+    numLinks,theta1,theta2,d3,theta4)
+
+    %% Init DH matrix
+    %       | a alpha d theta | length twist offset angle
+    % link i|                 |
+    DH = [0, 0, d0, 0;
+        a1, 0, 0, theta1;
+        a2, pi, 0, theta2;
+        0, 0, d3, 0;
+        0, 0, 0, theta4;];
+    
+    % Init T matrix
+    T = eye(4);
+    % Init Position vector
+    p = zeros(3,numLinks);
+
+    %% Homogeneus Transformation matrix
+    for i = 1:numLinks
+        
+        % Link Position
+        p(:,i) = T(1:3,4);
+        
+        % Computing the i-th homogeneus matrix
+        A = [cos(DH(i,4)), -sin(DH(i,4))*cos(DH(i,2)), ... 
+            sin(DH(i,4))*sin(DH(i,2)), DH(i,1)*cos(DH(i,4));
+            sin(DH(i,4)), cos(DH(i,4))*cos(DH(i,2)), ...
+            -cos(DH(i,4))*sin(DH(i,2)), DH(i,1)*sin(DH(i,4));
+            0, sin(DH(i,2)), cos(DH(i,2)), DH(i,3);
+            0, 0, 0, 1;];
+    
+        % Computing Tb_n
+        T = T * A;
+        
+    end
+
+    % End effector Position and Orientation
+    Pe = T(1:3,4);
+    Re = T(1:3,1:3);
+    
+    yaw = atan2(Re(2,1),Re(1,1));
+    pitch = atan2(-Re(3,1),sqrt(Re(3,2)^2 + Re(3,3)^2));
+    roll = atan2(Re(3,2),Re(3,3)); 
+
+end
+
+%% Direct Kinematic function
+function [xe, ye, ze, phi] = scaraDirectKinematic(a1,a2,d0,theta1,...
+    theta2,d3,theta4)
+
+    xe = a1*cos(theta1) + a2*cos(theta1 + theta2);
+    ye = a1*sin(theta1) + a2*sin(theta1 + theta2);
+    ze = d0 - d3;
+    phi = theta1 + theta2 - theta4;
+
+end
+
+%% Inverse Kinematic function
+function [theta1,theta2,d3,theta4] = scaraInverseKinematic(xe, ye, ze, phi)
+
+    % Calculate joint angles using geometric relationships
+    theta1 = atan2(ye, xe);
+    D = (x^2 + y^2 - a1^2 - a2^2) / (2 * a1 * a2);
+    theta2 = atan2(sqrt(1 - D^2), D);
+    
+    % Calculate joint variables
+    theta4 = phi - theta1 - theta2;
+    d3 = ze - d0;
+
+end
+
+%% Jacobian function
+function [J, determinant] = scaraJacobian(a1,a2,theta1,theta2)
+
+        J = [-a1*sin(theta1) - a2*sin(theta1 + theta2), - a2*sin(theta1 + theta2), 0, 0;
+        a1*cos(theta1) + a2*cos(theta1 + theta2), a2*cos(theta1 + theta2), 0, 0;
+        0, 0, -1, 0;
+        1, 1, 0, -1;];
+
+        determinant = det(J);
+end
+
 %% Function to Plot the Manipulator Structure
 function plotScara(p, xe, ye, ze, phi)
 
     % Plot Links
     plot3(p(1,:), p(2,:), p(3,:), '-o', 'LineWidth', 2, 'DisplayName',...
-        'Links', 'Color','yellow');
+        'Links', 'Color',[0.5, 0.5, 0.5]);
     hold on
 
     % Plot joints
     scatter3(p(1,:), p(2,:), p(3,:), 100, 'filled', 'MarkerEdgeColor', ...
         'k', 'MarkerFaceColor', 'r', 'DisplayName', 'Joints');
     
-    arrow = 0.1;
+    arrow = 0.1;    % Arrow length
     
     % Plot base frame
     quiver3(0, 0, 0, arrow, 0, 0, 'LineWidth', 1.5,...
@@ -165,13 +246,97 @@ function plotScara(p, xe, ye, ze, phi)
         'DisplayName', 'Orientation Z');
 
     hold off
-
+    
+    % Add a title
     title('Manipulator Links and Joints Pose');
     xlabel('x(t)'); ylabel('y(t)'); zlabel('z(t)');
     axis equal
     grid on
 
     % Add a legend
-    legend('Location', 'Best');
+    legend('Location', 'BestOutside');
+end
+
+%% Function to use for velocity and force ellipsoid computation
+function [velEllips, forceEllips, manipulability] = scaraEllipsoid(J)
+    
+    %% Forward Kinematics of 2 link approximation for the SCARA Ellipsoid
+    J = J(1:2,1:2);
+
+    %% Eigenvalues and Eigenvectors
+    [V, D] = eig(J*J');
+    ev = diag(D);
+    ax = sqrt((abs(ev(1))));
+    ay = sqrt((abs(ev(2))));
+    
+    %% Velocity or Manipulability ellipsoid
+    velEllips = V * [ax * cosd(0:360); ay * sind(0:360)]; 
+    
+    %% Force ellipsoid
+    % Axis are rotated by 90° it's eq to compute (J*J')^-1
+    forceEllips = V * [ay * sind(0:360); ax * cosd(0:360)];
+    
+    %% Manipulability measure
+    manipulability = sqrt(det(J*J'));
+
+end
+
+%% Function to plot ellipsoid
+function plotScaraEllipsoids(velEllips, forceEllips, xe, ye, a1, theta1)
+
+    % Plot 2D SCARA approximation
+    plot(0,0,'ko','MarkerFaceColor','k','MarkerSize',8);
+    hold on;
+    plot([0, a1*cos(theta1), xe],[0, a1*sin(theta1), ye],'r-o',...
+        'LineWidth',1.5,'MarkerFaceColor','r','MarkerSize',5);
+
+    
+    % Plot Velocity or Manipulability ellipsoid
+    plot(xe + velEllips(1,:), ye + velEllips(2,:), 'b-');
+    hold on
+
+    % Plot Force ellipsoid
+    plot(xe + forceEllips(1,:), ye + forceEllips(2,:), 'm-');
+    hold off
+
+    % add title and legend
+    title('Velocity and Force Ellipsoid');
+    xlabel('Vxe'); ylabel('Vye');
+    legend('Base', 'Arm', 'Velocity Ellipsoid', 'Force Ellipsoid',...
+        'Location','BestOutside');
+
+    ax = gca;
+    ax.XAxisLocation = 'origin';
+    ax.YAxisLocation = 'origin';
+    axis equal;
+    grid on;
+    
+end
+
+%% Function to plot ellipsoid
+function plotScaraEllipsoid(Ellips, xe, ye, a1, theta1)
+
+    % Plot 2D SCARA approximation
+    plot(0,0,'ko','MarkerFaceColor','k','MarkerSize',8);
+    hold on;
+    plot([0, a1*cos(theta1), xe],[0, a1*sin(theta1), ye],'r-o',...
+        'LineWidth',1.5,'MarkerFaceColor','r','MarkerSize',5);
+
+    
+    % Plot Manipulability ellipsoid
+    plot(xe + Ellips(1,:), ye + Ellips(2,:), 'g-');
+    hold on
+
+    % add title and legend
+    title('Ellipsoid');
+    xlabel('Vxe'); ylabel('Vye');
+    legend('Base', 'Arm', 'Ellipsoid','Location','BestOutside');
+
+    ax = gca;
+    ax.XAxisLocation = 'origin';
+    ax.YAxisLocation = 'origin';
+    axis equal;
+    grid on;
+    
 end
 
