@@ -75,9 +75,13 @@ traj_dot = zeros(3,length(traj));
 traj_dot(1,:) = diff([0 traj(1,:)]); 
 traj_dot(2,:) = diff([0 traj(2,:)]); 
 traj_dot(3,:) = diff([0 traj(3,:)]);
+traj_ddot(1,:) = diff([0 traj_dot(1,:)]); 
+traj_ddot(2,:) = diff([0 traj_dot(2,:)]); 
+traj_ddot(3,:) = diff([0 traj_dot(3,:)]);
 time = [t1, t2, t3, t4, t5, t6, t7, t8, t9, t10];
 timesample = timeseries(traj',time);
 timesample_dot = timeseries(traj_dot',time);
+timesample_ddot = timeseries(traj_ddot',time);
 
 %% Function to plot the trajectory points planned
 function plotPathPlan(path)

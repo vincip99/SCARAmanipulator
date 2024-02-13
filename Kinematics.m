@@ -38,52 +38,7 @@ axis equal; %responsive
 
 %% Moving SCARA for some joint values in a straigth line
 
-% joint variables of interest
-theta1 = pi/2; theta2 = -pi;
-
-figure
-while theta1 >= pi/16
-    
-    % computing DK Jacobian and ellipsoid
-    p = scaraHomogeneusTransf(a1,a2,d0,numLinks,theta1,theta2,d3,theta4);
-    [xe, ye, ze, phi] = scaraDirectKinematic(a1,a2,d0,theta1,theta2,d3,theta4);
-    J = scaraJacobian(a1,a2,theta1,theta2);
-    [velEllips1, forceEllips1, manipulability] = scaraEllipsoid(J);
-    disp('manipulability')
-    disp(manipulability)
-
-    % Plot
-    subplot(4,1,1);
-    plotScara(p, xe, ye, ze, phi);
-    axis equal;
-    title('Robot Manipulator Pose');
-    hold on
-    
-    subplot(4,1,2);
-    plotScaraEllipsoids(velEllips1, forceEllips1, xe, ye, a1, theta1);
-    axis equal;
-    title('Manipulability Ellipsoids');
-    hold on
-    subplot(4,1,3);
-    plotScaraEllipsoid(velEllips1, xe, ye, a1, theta1);
-    axis equal;
-    title('Manipulability Ellipsoids');
-    hold on
-    subplot(4,1,4);
-    plotScaraEllipsoid(forceEllips1, xe, ye, a1, theta1);
-    axis equal;
-    title('Manipulability Ellipsoids');
-    hold on
-    
-    % Update joint variables
-    theta1 = theta1/2;
-    theta2 = theta2/2;
-    
-    % Pause to visualize each step
-    pause(0.1);
-
-end
-hold off
+straightLine(a1,a2,d0,theta4,d3,numLinks)
 
 %% Ellipsoid Calculation for different joint variables value
 
@@ -188,6 +143,7 @@ end
 %% Inverse Kinematic function
 function [theta1,theta2,d3,theta4] = scaraInverseKinematic(xe, ye, ze, phi)
 
+
     % Calculate joint angles using geometric relationships
     theta1 = atan2(ye, xe);
     D = (x^2 + y^2 - a1^2 - a2^2) / (2 * a1 * a2);
@@ -214,23 +170,20 @@ end
 function plotScara(p, xe, ye, ze, phi)
 
     % Plot Links
-    plot3(p(1,:), p(2,:), p(3,:), '-o', 'LineWidth', 2, 'DisplayName',...
-        'Links', 'Color',[0.5, 0.5, 0.5]);
+    plot3(p(1,:), p(2,:), p(3,:), '-o', 'LineWidth', 2,...
+        'Color',[0.5, 0.5, 0.5]);
     hold on
 
     % Plot joints
     scatter3(p(1,:), p(2,:), p(3,:), 100, 'filled', 'MarkerEdgeColor', ...
-        'k', 'MarkerFaceColor', 'r', 'DisplayName', 'Joints');
+        'k', 'MarkerFaceColor', 'r');
     
     arrow = 0.1;    % Arrow length
     
     % Plot base frame
-    quiver3(0, 0, 0, arrow, 0, 0, 'LineWidth', 1.5,...
-        'DisplayName', 'Base Frame X');
-    quiver3(0, 0, 0, 0, arrow, 0, 'LineWidth', 1.5,...
-        'DisplayName', 'Base Frame Y');
-    quiver3(0, 0, 0, 0, 0, arrow, 'LineWidth', 1.5,...
-        'DisplayName', 'Orientation Z');
+    quiver3(0, 0, 0, arrow, 0, 0, 'LineWidth', 1.5);
+    quiver3(0, 0, 0, 0, arrow, 0, 'LineWidth', 1.5);
+    quiver3(0, 0, 0, 0, 0, arrow, 'LineWidth', 1.5);
 
     % End effector Orientation
     Rz = arrow * [cos(phi), -sin(phi), 0;
@@ -238,23 +191,23 @@ function plotScara(p, xe, ye, ze, phi)
         0, 0, -1];
 
     % Plot end effector frame
-    quiver3(xe, ye, ze, Rz(1,1), Rz(1,2), Rz(1,3), 'LineWidth', 1.5,...
-        'DisplayName', 'Orientation X');
-    quiver3(xe, ye, ze, Rz(2,1), Rz(2,2), Rz(2,3), 'LineWidth', 1.5,...
-        'DisplayName', 'Orientation Y');
-    quiver3(xe, ye, ze, Rz(3,1), Rz(3,2), Rz(3,3), 'LineWidth', 1.5,...
-        'DisplayName', 'Orientation Z');
+    quiver3(xe, ye, ze, Rz(1,1), Rz(1,2), Rz(1,3), 'LineWidth', 1.5);
+    quiver3(xe, ye, ze, Rz(2,1), Rz(2,2), Rz(2,3), 'LineWidth', 1.5);
+    quiver3(xe, ye, ze, Rz(3,1), Rz(3,2), Rz(3,3), 'LineWidth', 1.5);
 
     hold off
     
     % Add a title
     title('Manipulator Links and Joints Pose');
-    xlabel('x(t)'); ylabel('y(t)'); zlabel('z(t)');
+    xlabel('x(t), [m]'); ylabel('y(t), [m]'); zlabel('z(t), [m]');
     axis equal
     grid on
 
     % Add a legend
-    legend('Location', 'BestOutside');
+    % legend('Location', 'BestOutside');
+    legend('Links','Joints','Base Frame X','Base Frame Y','Base Frame Z',...
+        'Orientation X','Orientation Y','Orientation Z','Location',...
+        'BestOutside');
 end
 
 %% Function to use for velocity and force ellipsoid computation
@@ -301,7 +254,7 @@ function plotScaraEllipsoids(velEllips, forceEllips, xe, ye, a1, theta1)
 
     % add title and legend
     title('Velocity and Force Ellipsoid');
-    xlabel('Vxe'); ylabel('Vye');
+    xlabel('xe, [m]'); ylabel('ye, [m]');
     legend('Base', 'Arm', 'Velocity Ellipsoid', 'Force Ellipsoid',...
         'Location','BestOutside');
 
@@ -329,7 +282,7 @@ function plotScaraEllipsoid(Ellips, xe, ye, a1, theta1)
 
     % add title and legend
     title('Ellipsoid');
-    xlabel('Vxe'); ylabel('Vye');
+    xlabel('xe, [m]'); ylabel('ye, [m]');
     legend('Base', 'Arm', 'Ellipsoid','Location','BestOutside');
 
     ax = gca;
@@ -340,3 +293,54 @@ function plotScaraEllipsoid(Ellips, xe, ye, a1, theta1)
     
 end
 
+%% Routine functions
+function straightLine(a1,a2,d0,theta4,d3,numLinks)
+%% Moving SCARA for some joint values in a straigth line
+    % joint variables of interest
+    theta1 = pi/2; theta2 = -pi;
+    
+    figure
+    while theta1 >= pi/32
+        
+        % computing DK Jacobian and ellipsoid
+        p = scaraHomogeneusTransf(a1,a2,d0,numLinks,theta1,theta2,d3,theta4);
+        [xe, ye, ze, phi] = scaraDirectKinematic(a1,a2,d0,theta1,theta2,d3,theta4);
+        J = scaraJacobian(a1,a2,theta1,theta2);
+        [velEllips1, forceEllips1, manipulability] = scaraEllipsoid(J);
+        disp('manipulability')
+        disp(manipulability)
+    
+        % Plot
+        subplot(2,2,1);
+        plotScara(p, xe, ye, ze, phi);
+        axis equal;
+        title('Robot Manipulator Pose');
+        hold on
+        
+        subplot(2,2,2);
+        plotScaraEllipsoids(velEllips1, forceEllips1, xe, ye, a1, theta1);
+        axis equal;
+        title('Manipulability Ellipsoids');
+        hold on
+        subplot(2,2,3);
+        plotScaraEllipsoid(velEllips1, xe, ye, a1, theta1);
+        axis equal;
+        title('Velocity Ellipsoids');
+        hold on
+        subplot(2,2,4);
+        plotScaraEllipsoid(forceEllips1, xe, ye, a1, theta1);
+        axis equal;
+        title('Force Ellipsoids');
+        hold on
+        
+        % Update joint variables
+        theta1 = theta1/2;
+        theta2 = theta2/2;
+        
+        % Pause to visualize each step
+        pause(0.1);
+    
+    end
+    hold off
+
+end
