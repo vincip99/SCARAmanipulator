@@ -23,8 +23,8 @@ path = [0.3536 -0.8536 0.5 0;
 -0.183 0.183 0.3 0;
 -0.5 0 0.2 0;
 -0.5 -0.5 0.2 0;
--0.2878 -0.78 0.3 0
-0 -0.866 0.4 0
+-0.2878 -0.78 0.3 0;
+0 -0.866 0.4 0;
 0.3536 -0.8536 0.5 0];
 
 % Time vector from ti to tf
@@ -69,15 +69,23 @@ seg9 = rectilinearPath(path(9,1:3)',path(10,1:3)',s9(1,:),s9(2,:),s9(3,:));
 seg10 = rectilinearPath(path(10,1:3)',path(11,1:3)',s10(1,:),s10(2,:),s10(3,:));
 
 plotTrj(seg1, seg2, seg3, seg4, seg5, seg6, seg7, seg8, seg9, seg10);
+ 
+traj_pos = [seg1, seg2, seg3, seg4, seg5, seg6, seg7, seg8, seg9, seg10];
+traj_orient = zeros(1,length(traj_pos));
+traj = [traj_pos; traj_orient];
 
-traj = [seg1, seg2, seg3, seg4, seg5, seg6, seg7, seg8, seg9, seg10];
-traj_dot = zeros(3,length(traj));
+traj_dot = zeros(4,length(traj));
 traj_dot(1,:) = diff([0 traj(1,:)]); 
 traj_dot(2,:) = diff([0 traj(2,:)]); 
 traj_dot(3,:) = diff([0 traj(3,:)]);
+traj_dot(4,:) = diff([0 traj(4,:)]);
+
+traj_ddot = zeros(4,length(traj));
 traj_ddot(1,:) = diff([0 traj_dot(1,:)]); 
 traj_ddot(2,:) = diff([0 traj_dot(2,:)]); 
 traj_ddot(3,:) = diff([0 traj_dot(3,:)]);
+traj_ddot(4,:) = diff([0 traj_dot(4,:)]);
+
 time = [t1, t2, t3, t4, t5, t6, t7, t8, t9, t10];
 timesample = timeseries(traj',time);
 timesample_dot = timeseries(traj_dot',time);
