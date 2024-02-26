@@ -145,13 +145,14 @@ function [theta1,theta2,d3,theta4] = scaraInverseKinematic(xe, ye, ze, phi, a1, 
 
 
     % Calculate joint angles using geometric relationships
-    theta1 = atan2(ye, xe);
-    D = (xe^2 + ye^2 - a1^2 - a2^2) / (2 * a1 * a2);
-    theta2 = atan2(sqrt(1 - D^2), D);
-    
+    D = sqrt(xe^2 + ye^2);
+    %theta2 = atan2(sqrt(1 - D^2), D);
+    theta2 = pi - acos((a1^2+a2^2-D^2) / (2*a1*a2));
+    theta1 = atan2(ye, xe) - atan2(a2*sin(theta2), a1+a2*cos(theta2));
+
     % Calculate joint variables
-    theta4 = phi - theta1 - theta2;
-    d3 = ze - d0;
+    theta4 = - phi + theta1 + theta2;
+    d3 = - ze + d0;
 
 end
 
