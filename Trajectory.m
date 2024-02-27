@@ -1,5 +1,5 @@
 %% Trajectory planning
-clear all
+%clear all
 
 %% Trajectory points and Orientation
 % Create points and orientation matrix
@@ -31,12 +31,12 @@ path = [0.3536 -0.8536 0.5 0;
 % T = [0 2 4 6 8 10 12 14 16 18 20];
 T = [0 5 9 12 15 18 21 24 28 32 36];
 % Time step precision
-precision = 0.1;
+dt = 0.001;
 
-t1 = T(1):0.1:T(2); t2 = T(2):0.1:T(3); t3 = T(3):0.1:T(4);
-t4 = T(4):0.1:T(5); t5 = T(5):0.1:T(6); t6 = T(6):0.1:T(7);
-t7 = T(7):0.1:T(8); t8 = T(8):0.1:T(9); t9 = T(9):0.1:T(10);
-t10 = T(10):0.1:T(11);
+t1 = T(1):dt:T(2); t2 = T(2):dt:T(3); t3 = T(3):dt:T(4);
+t4 = T(4):dt:T(5); t5 = T(5):dt:T(6); t6 = T(6):dt:T(7);
+t7 = T(7):dt:T(8); t8 = T(8):dt:T(9); t9 = T(9):dt:T(10);
+t10 = T(10):dt:T(11);
 
 %% plot the trajectory points
 plotPathPlan(path)
@@ -70,22 +70,22 @@ seg9 = rectilinearPath(path(9,1:3)',path(10,1:3)',s9(1,:),s9(2,:),s9(3,:));
 seg10 = rectilinearPath(path(10,1:3)',path(11,1:3)',s10(1,:),s10(2,:),s10(3,:));
 
 plotTrj(seg1, seg2, seg3, seg4, seg5, seg6, seg7, seg8, seg9, seg10);
- 
+
 traj_pos = [seg1, seg2, seg3, seg4, seg5, seg6, seg7, seg8, seg9, seg10];
 traj_orient = zeros(1,length(traj_pos));
 traj = [traj_pos; traj_orient];
 
 traj_dot = zeros(4,length(traj));
-traj_dot(1,:) = diff([0 traj(1,:)]); 
-traj_dot(2,:) = diff([0 traj(2,:)]); 
-traj_dot(3,:) = diff([0 traj(3,:)]);
-traj_dot(4,:) = diff([0 traj(4,:)]);
+traj_dot(1,:) = diff([traj(1,:) traj(1,end)])/dt; 
+traj_dot(2,:) = diff([traj(2,:) traj(2,end)])/dt; 
+traj_dot(3,:) = diff([traj(3,:) traj(3,end)])/dt;
+traj_dot(4,:) = diff([traj(4,:) traj(4,end)])/dt;
 
 traj_ddot = zeros(4,length(traj));
-traj_ddot(1,:) = diff([0 traj_dot(1,:)]); 
-traj_ddot(2,:) = diff([0 traj_dot(2,:)]); 
-traj_ddot(3,:) = diff([0 traj_dot(3,:)]);
-traj_ddot(4,:) = diff([0 traj_dot(4,:)]);
+traj_ddot(1,:) = diff([traj_dot(1,:) traj_dot(1,end)])/dt; 
+traj_ddot(2,:) = diff([traj_dot(2,:) traj_dot(2,end)])/dt; 
+traj_ddot(3,:) = diff([traj_dot(3,:) traj_dot(3,end)])/dt;
+traj_ddot(4,:) = diff([traj_dot(4,:) traj_dot(4,end)])/dt;
 
 time = [t1, t2, t3, t4, t5, t6, t7, t8, t9, t10];
 timesample = timeseries(traj',time);
