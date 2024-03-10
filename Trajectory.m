@@ -1,4 +1,4 @@
-%% Trajectory planning
+ %% Trajectory planning
 %clear all
 
 %% Trajectory points and Orientation
@@ -295,9 +295,9 @@ function plotTrj(seg1, seg2, seg3, seg4, seg5, seg6, seg7, seg8, seg9, seg10)
 
     % Beautify plot
     grid on;
-    xlabel('X');
-    ylabel('Y');
-    zlabel('Z');
+    xlabel('X [m]');
+    ylabel('Y [m]');
+    zlabel('Z [m]');
     title('Trajectory Plot');
     
     hold off;
