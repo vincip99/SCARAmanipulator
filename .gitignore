@@ -1,0 +1,11 @@
+# Ignore MATLAB backup and temporary files
+*.asv
+*.mlx
+*.mexw64
+*.lock
+
+# Ignore backup and autosave files
+*.asv
+*.mdl.autosave
+*.slxc
+slprj/
