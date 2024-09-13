@@ -1,5 +1,5 @@
- %% Trajectory planning
-%clear all
+%% Trajectory planning
+clear all
 
 %% Trajectory points and Orientation
 % Create points and orientation matrix
@@ -16,19 +16,18 @@
 %     .8, .6, .6, 0;]; % circumference end
 
 path = [0.3536 -0.8536 0.5 0;
-0.75 -0.433 0.7 0;
-0.683 0.183 0.8 0;
-0.25 0.433 0.8 0;
--0.1464 0.3536 0.6 0;
--0.183 0.183 0.3 0;
--0.5 0 0.2 0;
--0.5 -0.5 0.2 0;
--0.2878 -0.78 0.3 0;
-0 -0.866 0.4 0;
-0.3536 -0.8536 0.5 0];
+        0.75 -0.433 0.7 0;
+        0.683 0.183 0.8 0;
+        0.25 0.433 0.8 0;
+        -0.1464 0.3536 0.6 0;
+        -0.183 0.183 0.3 0;
+        -0.5 0 0.2 0;
+        -0.5 -0.5 0.2 0;
+        -0.2878 -0.78 0.3 0;
+        0 -0.866 0.4 0;
+        0.3536 -0.8536 0.5 0];
 
 % Time vector from ti to tf
-% T = [0 2 4 6 8 10 12 14 16 18 20];
 T = [0 5 9 12 15 18 21 24 28 32 36];
 % Time step precision
 dt = 0.001;
@@ -113,10 +112,10 @@ function plotPathPlan(path)
 end
 
 %% Trapezioidal velocity profile function motion law 
-function [s_i, si_dot] = trapezioidalTrj(t,pin,pfin)
+function [s, si_dot] = trapezioidalTrj(t,pin,pfin)
     
     % init s (motion law)
-    s_i = zeros(1,length(t));
+    s = zeros(1,length(t));
     
     % Define cruise velocity, cruise time, cruise acceleration
     pc_d = 1.8*(pfin - pin)/(t(end) - t(1));
@@ -124,18 +123,18 @@ function [s_i, si_dot] = trapezioidalTrj(t,pin,pfin)
     pc_dd = pc_d^2/(pin - pfin + pc_d*(t(end) - t(1)));
     
     % Composing motion law 
-    for i = 1:length(s_i)
+    for i = 1:length(s)
         if t(i) >= t(1) && t(i) <= tc + t(1)
-            s_i(i) = pin + 0.5 * pc_dd * (t(i) - t(1))^2;
+            s(i) = pin + 0.5 * pc_dd * (t(i) - t(1))^2;
         elseif t(i) > tc + t(1) && t(i) <= t(end) - tc
-            s_i(i) = pin + pc_dd * tc *((t(i) - t(1)) - 0.5*tc);
+            s(i) = pin + pc_dd * tc *((t(i) - t(1)) - 0.5*tc);
         elseif t(i) > t(end) - tc && t(i) <= t(end)
-            s_i(i) = pfin - 0.5 * pc_dd * (t(end) - t(i))^2;
+            s(i) = pfin - 0.5 * pc_dd * (t(end) - t(i))^2;
         end
     end
 
     %% Velocity trapezioidal profile
-    si_dot = zeros(1,length(s_i));
+    si_dot = zeros(1,length(s));
     
     sc_dot = pc_d;
     s0_dot = 0;
@@ -162,63 +161,6 @@ function [s, s_dot] = trapezioidal(t,pin,pfin)
 
     s = [sx; sy; sz];
     s_dot = [sx_dot; sy_dot; sz_dot];
-
-end
-
-function [s, s_dot, vfin] = trapezioidalVia(t,pin,pfin,vin,dt)
-    
-    % x, y, z arc length and velocity
-    [sx, sx_dot, vfinx] = viaPointTrj(t,pin(1,1),pfin(1,1),vin(1),dt);
-    [sy, sy_dot, vfiny] = viaPointTrj(t,pin(1,2),pfin(1,2),vin(2),dt);
-    [sz, sz_dot, vfinz] = viaPointTrj(t,pin(1,3),pfin(1,3),vin(3),dt);
-
-    s = [sx; sy; sz];
-    s_dot = [sx_dot; sy_dot; sz_dot];
-    vfin = [vfinx; vfiny; vfinz]; 
-
-end
-
-%% Trapezioidal velocity profile via points function motion law 
-function [s_i, si_dot, vfin] = viaPointTrj(t,pin,pfin,vin,dt)
-    
-    % init s (motion law)
-    s_i = zeros(1,length(t));
-    
-    % Define cruise velocity, cruise time, cruise acceleration
-    pc_d = 1.8*(pfin - pin)/(t(end) - t(1));
-    tc = (pin - pfin + pc_d*(t(end) - t(1)))/pc_d;
-    pc_dd = pc_d^2/(pin - pfin + pc_d*(t(end) - t(1)));
-    
-    % Composing motion law 
-    for i = 1:length(s_i)
-        if t(i) >= t(1) && t(i) <= tc + t(1)
-            s_i(i) = pin + 0.5 * pc_dd * (t(i) - t(1))^2;
-        elseif t(i) > tc + t(1) && t(i) <= t(end) - tc
-            s_i(i) = pin + pc_dd * tc *((t(i) - t(1)) - 0.5*tc);
-        elseif t(i) > t(end) - tc && t(i) <= t(end) - dt
-            s_i(i) = pfin - 0.5 * pc_dd * (t(end) - t(i))^2;
-        end
-    end
-
-    %% Velocity trapezioidal profile
-    si_dot = zeros(1,length(s_i));
-    
-    sc_dot = pc_d;
-    s0_dot = vin;
-
-    for i = 1:length(si_dot)
-        if t(i) >= t(1) && t(i) <= tc + t(1)
-            si_dot(i) = (sc_dot - s0_dot)/tc * (t(i) - t(1));
-        elseif t(i) > tc + t(1) && t(i) <= t(end) - tc
-            si_dot(i) = sc_dot;
-        elseif t(i) > t(end) - tc && t(i) <= t(end) - dt
-            si_dot(i) = (s0_dot - sc_dot)/(tc) * (t(i) - t(end));
-        end
-    end
-
-
-    s_dot = [si_dot(1:i), nonzeros(si_dot(i+1:end))];
-    vfin = si_dot(i);
 
 end
 
@@ -252,7 +194,7 @@ function rect = rectilinearPath(pin,pfin,sx,sy,sz)
         if (norm(pfin(i) - pin(i)) == 0)
             rect(i,:) = pin(i) .* ones(size(s(i,:)));
         else
-           rect(i,:) = pin(i) + (abs(s(i,:) - pin(i))) .* (pfin(i) - pin(i))/(norm(pfin(i) - pin(i),2));  
+           rect(i,:) = pin(i) + (abs(s(i,:) - pin(i))) .* (pfin(i) - pin(i))/(norm(pfin(i) - pin(i)));  
         end
     end
 

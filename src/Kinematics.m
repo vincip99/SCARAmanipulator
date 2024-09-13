@@ -1,8 +1,10 @@
 %% Direct Kinematics
 clear all
+close all
+clc
 
 %% Parameter Initialization
-% Init the SCARA manipulator kiinimetic parameters
+% Init the SCARA manipulator kinematic parameters
 d0 = 1; a1 = .5; a2 = .5;
 % numLinks
 numLinks = 5;
@@ -10,9 +12,6 @@ numLinks = 5;
 % Init joint variables
 theta1 = pi/2; theta2 = -pi/4; d3 = .25; theta4 = pi/3; 
 
-[theta1_,theta2_,d3_,theta4_] = scaraInverseKinematic(0.353600000000000, -0.853600000000000, 0.500000000000000, 0, a1, a2, d0)
-J_ = scaraJacobian(a1,a2,-1.5706,0.7851)
-qd_ = J_\[0.3536; -0.8536; 0.5; 0]
 %% Homogeneus Transformation matrix
 p = scaraHomogeneusTransf(a1,a2,d0,numLinks,theta1,theta2,d3,theta4);
 
